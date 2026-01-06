@@ -20,11 +20,18 @@ An iPhone application that functions as a hearing aid by capturing ambient sound
 
 ## Installation
 
-### Configuring Capabilities
+### Creating a Project in Xcode
 
-1. In Xcode select the project target.
-2. Signing & Capabilities → add **Audio, AirPlay, and Picture in Picture**.
-3. Ensure the `NSMicrophoneUsageDescription` string is present (already set).
+1. Open Xcode
+2. Create a new project: **File → New → Project**
+3. Select **iOS → App**
+4. Fill in the project details:
+- Product Name: `SmartEar`
+   - Team: select your team
+- Organization Identifier: for example, `com.yourcompany`
+   - Interface: **Storyboard**
+   - Language: **Swift**
+5. Save the project
 
 ## Usage
 
