@@ -4,11 +4,11 @@ An iPhone application that functions as a hearing aid by capturing ambient sound
 
 ## Features
 
-- ✅ Capture sound via the iPhone's microphone
-- ✅ Real-time sound delivery through speakers or headphones
-- ✅ Adjustable sound amplification (0x - 2x)
-- ✅ Simple and intuitive interface
-- ✅ Bluetooth headphone support
+- ✅ Capture ambient sound and play it back in real time
+- ✅ Adjustable amplification (0x – 2x)
+- ✅ Live volume indicator in dB
+- ✅ Source selection: auto, iPhone mic, headset/Bluetooth mic
+- ✅ Simple, accessible UI
 - ✅ Error handling and permission requests
 
 ## Requirements
@@ -20,63 +20,29 @@ An iPhone application that functions as a hearing aid by capturing ambient sound
 
 ## Installation
 
-### Creating a Project in Xcode
-
-1. Open Xcode
-2. Create a new project: **File → New → Project**
-3. Select **iOS → App**
-4. Fill in project details:
-   - Product Name: `SmartEar`
-   - Team: Select your team
-   - Organization Identifier: e.g., `com.yourcompany`
-   - Interface: **Storyboard** or **SwiftUI** (we are using code)
-   - Language: **Swift**
-5. Save the project
-
-### Adding Files
-
-1. Copy all files from this directory into your project folder in Xcode:
-   - `AppDelegate.swift`
-   - `SceneDelegate.swift`
-   - `ViewController.swift`
-   - `AudioEngineManager.swift`
-   - `Info.plist` (replace the existing one)
-
-2. In Xcode:
-   - Delete the existing `Info.plist` from the project
-   - Add the new `Info.plist` via **File → Add Files to "SmartEar"**
-   - Ensure all `.swift` files are added to the Target
-
-### Configuring Info.plist
-
-Ensure the following keys are present in `Info.plist`:
-
-- `NSMicrophoneUsageDescription` - description for microphone access request
-- `UIBackgroundModes` with `audio` - for background operation (optional)
-
 ### Configuring Capabilities
 
-1. In Xcode, select the project in the navigator
-2. Go to the **Signing & Capabilities** tab
-3. Ensure the following are enabled:
-   - **Audio, AirPlay, and Picture in Picture** (for audio functionality)
+1. In Xcode select the project target.
+2. Signing & Capabilities → add **Audio, AirPlay, and Picture in Picture**.
+3. Ensure the `NSMicrophoneUsageDescription` string is present (already set).
 
 ## Usage
 
-1. Launch the app on your iPhone
-2. Grant microphone access permission on first launch
-3. Press the **"Start Listening"** button
-4. Use the slider to adjust sound amplification
-5. To stop, press the **"Stop Listening"** button
+1. Launch the app on your iPhone.
+2. Grant microphone access on first launch.
+3. Select the mic source (Auto / iPhone / Headset). If the chosen device is unavailable, the app will prompt to change.
+4. Press **“Начать прослушивание”**. The live dB indicator shows current level.
+5. Use the slider to adjust amplification (0x–2x).
+6. Press **“Остановить”** to stop listening.
 
 ## Architecture
 
 ### Main Components
 
-- **AppDelegate**: Configures the audio session on app launch
-- **SceneDelegate**: Manages the scene lifecycle
-- **ViewController**: Main screen with UI and control
-- **AudioEngineManager**: Handles audio processing via AVAudioEngine
+- **AppDelegate**: Prepares the audio session at launch.
+- **SceneDelegate**: Scene lifecycle management.
+- **ViewController**: UI, permissions, mic selection, level rendering.
+- **AudioEngineManager**: Audio graph, amplification, input selection, interruptions, level meter.
 
 ### Technologies
 
@@ -88,12 +54,12 @@ Ensure the following keys are present in `Info.plist`:
 
 The app follows iOS development best practices:
 
-1. **Separation of Concerns**: Audio logic is separated from UI
-2. **Error Handling**: All errors are handled and displayed to the user
-3. **Permission Requests**: Proper handling of microphone access permissions
-4. **Resource Management**: Correct release of resources upon stopping
-5. **UI/UX**: Intuitive interface with feedback
-6. **Thread Safety**: All UI updates are performed on the main thread
+1. **Separation of concerns**: UI vs audio engine.
+2. **Permissions**: Explicit microphone request; user-friendly messaging.
+3. **Session management**: `AVAudioSession` configured for play/record, Bluetooth/speaker options.
+4. **Resource management**: Engine stop/reset, session deactivation on stop, interruption handling.
+5. **Safety/UX**: Amplification capped at 2x; live dB feedback; main-thread UI updates.
+6. **Accessibility**: Dynamic type-friendly fonts; clear states.
 
 ## Potential Improvements
 
