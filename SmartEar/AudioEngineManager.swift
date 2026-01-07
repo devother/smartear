@@ -37,6 +37,7 @@ final class AudioEngineManager {
     private let mixer = AVAudioMixerNode()
     private var audioGraphConfigured = false
     private var tapInstalled = false
+    private var currentAmplification: Float = 1.0
 
     private var interruptionObserver: NSObjectProtocol?
     private(set) var currentInput: InputSource = .auto
@@ -76,6 +77,7 @@ final class AudioEngineManager {
             throw AudioEngineError.microphonePermissionDenied
         }
 
+        currentAmplification = amplification
         try configureAudioSession()
         try configureAudioGraphIfNeeded()
         applyAmplification(amplification)
@@ -106,13 +108,31 @@ final class AudioEngineManager {
 
     func applyAmplification(_ value: Float) {
         // Clamp to 0x - 2x as per requirements.
-        mixer.outputVolume = max(0, min(value, 2.0))
+        currentAmplification = max(0, min(value, 2.0))
+        mixer.outputVolume = currentAmplification
     }
 
     func setPreferredInput(_ source: InputSource) throws {
+        let wasRunning = engine.isRunning
         currentInput = source
-        guard engine.isRunning else { return }
-        try applyPreferredInput(source)
+        
+        guard wasRunning else { return }
+        
+        // Перезапускаем движок для применения нового источника
+        engine.stop()
+        engine.reset()
+        removeLevelTap()
+        audioGraphConfigured = false
+        
+        // Сначала применяем новый источник, затем переконфигурируем граф
+        try configureAudioSession()
+        try applyPreferredInput(source)  // Применяем ДО получения формата
+        try configureAudioGraphIfNeeded()  // Теперь получаем правильный формат
+        applyAmplification(currentAmplification)
+        installLevelTapIfNeeded()
+        
+        engine.prepare()
+        try engine.start()
     }
 
     // MARK: - Private
@@ -121,6 +141,7 @@ final class AudioEngineManager {
         guard !audioGraphConfigured else { return }
 
         let input = engine.inputNode
+        // Получаем актуальный формат после применения preferred input
         let format = input.inputFormat(forBus: 0)
 
         engine.attach(mixer)
@@ -151,7 +172,9 @@ final class AudioEngineManager {
             }
             try audioSession.setPreferredInput(builtIn)
         case .headsetMic:
-            guard let headset = audioSession.availableInputs?.first(where: { $0.portType == .headsetMic || $0.portType == .bluetoothHFP }) else {
+            // Ищем наушники: сначала проводные, потом Bluetooth
+            let headsetTypes: [AVAudioSession.Port] = [.headsetMic, .bluetoothHFP, .bluetoothA2DP, .bluetoothLE]
+            guard let headset = audioSession.availableInputs?.first(where: { headsetTypes.contains($0.portType) }) else {
                 throw AudioEngineError.preferredInputUnavailable
             }
             try audioSession.setPreferredInput(headset)

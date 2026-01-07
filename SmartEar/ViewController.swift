@@ -100,10 +100,7 @@ final class ViewController: UIViewController {
         if audioManager.isRunning {
             stopListening()
         } else {
-            requestPermissionIfNeeded { [weak self] granted in
-                guard granted else { return }
-                self?.startListening()
-            }
+            startListeningWithPermissionCheck()
         }
     }
 
@@ -130,37 +127,46 @@ final class ViewController: UIViewController {
 
     // MARK: - Private helpers
 
+    private func startListeningWithPermissionCheck() {
+        let permission = AVAudioSession.sharedInstance().recordPermission
+        
+        switch permission {
+        case .granted:
+            // Разрешение уже есть, запускаем сразу
+            startListening()
+        case .denied:
+            // Разрешение отклонено, показываем ошибку
+            presentError(AudioEngineManager.AudioEngineError.microphonePermissionDenied)
+        case .undetermined:
+            // Запрашиваем разрешение и сразу запускаем после получения
+            audioManager.requestPermission { [weak self] granted in
+                guard let self = self else { return }
+                if granted {
+                    // Разрешение получено, запускаем прослушивание
+                    self.startListening()
+                } else {
+                    // Разрешение отклонено
+                    self.presentError(AudioEngineManager.AudioEngineError.microphonePermissionDenied)
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+
     private func startListening() {
         do {
             try audioManager.startListening(amplification: amplificationSlider.value)
             updateStateUI(isRunning: true)
         } catch {
             presentError(error)
+            updateStateUI(isRunning: false)
         }
     }
 
     private func stopListening() {
         audioManager.stop()
         updateStateUI(isRunning: false)
-    }
-
-    private func requestPermissionIfNeeded(completion: @escaping (Bool) -> Void) {
-        switch AVAudioSession.sharedInstance().recordPermission {
-        case .granted:
-            completion(true)
-        case .denied:
-            presentError(AudioEngineManager.AudioEngineError.microphonePermissionDenied)
-            completion(false)
-        case .undetermined:
-            audioManager.requestPermission { [weak self] granted in
-                if !granted {
-                    self?.presentError(AudioEngineManager.AudioEngineError.microphonePermissionDenied)
-                }
-                completion(granted)
-            }
-        @unknown default:
-            completion(false)
-        }
     }
 
     private func configureLayout() {
